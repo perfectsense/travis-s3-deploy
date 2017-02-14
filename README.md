@@ -28,6 +28,12 @@ jdk:
 
 install: true
 
+branches:
+  only:
+    - develop
+    - master
+    - release
+
 env:
   global:
     - DEPLOY_TARGET_PREFIX=exampleco # optional if using a shared deployment bucket
