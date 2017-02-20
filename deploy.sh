@@ -2,27 +2,35 @@
 
 set -e -u
 
-# See: https://github.com/travis-ci/artifacts for usage
+# Set the following environment variables:
+# DEPLOY_BUCKET = your bucket name
+# DEPLOY_BUCKET_PREFIX = a directory prefix within your bucket
+# DEPLOY_BRANCHES = regex of branches to deploy; leave blank for all
+# DEPLOY_EXTENSIONS = whitespace-separated file exentions to deploy; leave blank for "jar war zip"
+# DEPLOY_FILES = whitespace-separated files to deploy; leave blank for $TRAVIS_BUILD_DIR/target/*.$extensions
+# AWS_ACCESS_KEY_ID = AWS access ID
+# AWS_ACCESS_SECRET_KEY = AWS secret
+# AWS_SESSION_TOKEN = optional AWS session token for temp keys
 
-if [[ -z "${DEPLOY_TARGET_PREFIX:-}" ]]
+if [[ -z "${DEPLOY_BUCKET}" ]]
 then
-    DEPLOY_TARGET_PREFIX=""
+    echo "Bucket not specified via \$DEPLOY_BUCKET"
 fi
 
-if [[ -z "${DEPLOY_BRANCHES:-}" ]]
-then
-    DEPLOY_BRANCHES=""
-fi
+DEPLOY_BUCKET_PREFIX=${DEPLOY_BUCKET_PREFIX:-}
+
+DEPLOY_BRANCHES=${DEPLOY_BRANCHES:-}
+
+DEPLOY_EXTENSIONS=${DEPLOY_EXTENSIONS:-"jar war zip"}
+
 
 if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]
 then
-    export ARTIFACTS_PATHS=$(ls $TRAVIS_BUILD_DIR/target/*.{jar,war,zip} 2>/dev/null | tr "\n" ":" | sed s/:$//)
-    TARGET_PATH=pull-request/$TRAVIS_PULL_REQUEST
+    target_path=pull-request/$TRAVIS_PULL_REQUEST
 
 elif [[ -z "$DEPLOY_BRANCHES" || "$TRAVIS_BRANCH" =~ "$DEPLOY_BRANCHES" ]]
 then
-    export ARTIFACTS_PATHS=$(ls $TRAVIS_BUILD_DIR/target/*.{jar,war,zip} 2>/dev/null | tr "\n" ":" | sed s/:$//)
-    TARGET_PATH=deploy/$TRAVIS_BRANCH/$TRAVIS_BUILD_NUMBER
+    target_path=deploy/$TRAVIS_BRANCH/$TRAVIS_BUILD_NUMBER
 
 else
     echo "Not deploying."
@@ -30,9 +38,26 @@ else
 
 fi
 
-export ARTIFACTS_WORKING_DIR=$TRAVIS_BUILD_DIR/target
-export ARTIFACTS_TARGET_PATHS=$DEPLOY_TARGET_PREFIX/builds/$TARGET_PATH
+discovered_files=""
+for ext in ${DEPLOY_EXTENSIONS}
+do
+    discovered_files+=" $(ls $TRAVIS_BUILD_DIR/target/*.${ext} 2>/dev/null || true)"
+done
 
-curl -sL https://raw.githubusercontent.com/travis-ci/artifacts/master/install | bash
+files=${DEPLOY_FILES:-$discovered_files}
 
-~/bin/artifacts --debug upload
+if [[ -z "$files" ]]
+then
+    echo "Files not found; not deploying."
+    exit 1
+fi
+
+target=${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}builds/$target_path/
+
+pip install --upgrade --user awscli
+export PATH=~/.local/bin:$PATH
+
+for file in $files
+do
+    aws s3 cp $file s3://$DEPLOY_BUCKET/$target
+done
