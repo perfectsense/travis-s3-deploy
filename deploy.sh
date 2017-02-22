@@ -9,7 +9,7 @@ set -e -u
 # DEPLOY_EXTENSIONS = whitespace-separated file exentions to deploy; leave blank for "jar war zip"
 # DEPLOY_FILES = whitespace-separated files to deploy; leave blank for $TRAVIS_BUILD_DIR/target/*.$extensions
 # AWS_ACCESS_KEY_ID = AWS access ID
-# AWS_ACCESS_SECRET_KEY = AWS secret
+# AWS_SECRET_ACCESS_KEY = AWS secret
 # AWS_SESSION_TOKEN = optional AWS session token for temp keys
 
 if [[ -z "${DEPLOY_BUCKET}" ]]
