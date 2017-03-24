@@ -23,6 +23,7 @@ DEPLOY_BRANCHES=${DEPLOY_BRANCHES:-}
 
 DEPLOY_EXTENSIONS=${DEPLOY_EXTENSIONS:-"jar war zip"}
 
+DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$TRAVIS_BUILD_DIR/target}
 
 if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]
 then
@@ -41,7 +42,7 @@ fi
 discovered_files=""
 for ext in ${DEPLOY_EXTENSIONS}
 do
-    discovered_files+=" $(ls $TRAVIS_BUILD_DIR/target/*.${ext} 2>/dev/null || true)"
+    discovered_files+=" $(ls $DEPLOY_SOURCE_DIR/*.${ext} 2>/dev/null || true)"
 done
 
 files=${DEPLOY_FILES:-$discovered_files}
