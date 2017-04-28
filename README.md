@@ -2,7 +2,7 @@
 
 This script is used by [Travis CI](https://travis-ci.com/) to continuously deploy artifacts to an S3 bucket.
 
-When Travis builds a push to your project (not a pull request), any files matching `target/*.{war,jar,zip}` will be uploaded to your S3 bucket with the prefix `$DEPLOY_TARGET_PREFIX/builds/deploy/$BRANCH/$BUILD_NUMBER/`. Pull requests will upload the same files with a prefix of `$DEPLOY_TARGET_PREFIX/builds/pull-request/$PULL_REQUEST_NUMBER/`.
+When Travis builds a push to your project (not a pull request), any files matching `target/*.{war,jar,zip}` will be uploaded to your S3 bucket with the prefix `$DEPLOY_BUCKET_PREFIX/builds/deploy/$BRANCH/$BUILD_NUMBER/`. Pull requests will upload the same files with a prefix of `$DEPLOY_BUCKET_PREFIX/builds/pull-request/$PULL_REQUEST_NUMBER/`.
 
 For example, the 36th push to the `master` branch will result in the following files being created in your `exampleco-ops` bucket:
 
