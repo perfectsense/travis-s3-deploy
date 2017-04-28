@@ -43,8 +43,6 @@ env:
 
 script:
   - mvn -Plibrary verify
-
-after_success:
   - git clone https://github.com/perfectsense/travis-s3-deploy.git && travis-s3-deploy/deploy.sh
 ```
 
