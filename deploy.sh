@@ -53,7 +53,7 @@ then
     exit 1
 fi
 
-target=${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}builds/$target_path/
+target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
 
 pip install --upgrade --user awscli
 export PATH=~/.local/bin:$PATH
