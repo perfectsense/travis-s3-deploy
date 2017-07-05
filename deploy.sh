@@ -11,6 +11,7 @@ set -e -u
 # AWS_ACCESS_KEY_ID = AWS access ID
 # AWS_SECRET_ACCESS_KEY = AWS secret
 # AWS_SESSION_TOKEN = optional AWS session token for temp keys
+# PURGE_OLDER_THAN_DAYS = Files in the .../deploy and .../pull-request prefixes in S3 older than this number of days will be deleted; leave blank for 90, 0 to disable.
 
 if [[ -z "${DEPLOY_BUCKET}" ]]
 then
@@ -24,6 +25,8 @@ DEPLOY_BRANCHES=${DEPLOY_BRANCHES:-}
 DEPLOY_EXTENSIONS=${DEPLOY_EXTENSIONS:-"jar war zip"}
 
 DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$TRAVIS_BUILD_DIR/target}
+
+PURGE_OLDER_THAN_DAYS=${PURGE_OLDER_THAN_DAYS:-"90"}
 
 if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]
 then
@@ -62,3 +65,34 @@ for file in $files
 do
     aws s3 cp $file s3://$DEPLOY_BUCKET/$target
 done
+
+if [[ $PURGE_OLDER_THAN_DAYS -ge 1 ]]
+then
+    echo "Cleaning up builds in S3 older than $PURGE_OLDER_THAN_DAYS days . . ."
+
+    cleanup_prefix=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}
+    older_than_ts=`date -d"-${PURGE_OLDER_THAN_DAYS} days" +%s`
+
+    for suffix in deploy pull-request
+    do
+        aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=text | \
+        while read -r line
+        do
+            last_modified=`echo "$line" | awk -F'\t' '{print $4}'`
+            if [[ -z $last_modified ]]
+            then
+                continue
+            fi
+            last_modified_ts=`date -d"$last_modified" +%s`
+            filename=`echo "$line" | awk -F'\t' '{print $3}'`
+            if [[ $last_modified_ts -lt $older_than_ts ]]
+            then
+                if [[ $filename != "" ]]
+                then
+                    echo "s3://$DEPLOY_BUCKET/$filename is older than $PURGE_OLDER_THAN_DAYS days ($last_modified). Deleting."
+                    aws s3 rm s3://$DEPLOY_BUCKET/$filename
+                fi
+            fi
+        done
+    done
+fi
