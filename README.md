@@ -42,7 +42,7 @@ env:
     - DEPLOY_BRANCHES=develop\|release # optional - all branches defined in "branches" above is the default
 
 script:
-  - mvn -Plibrary verify
+  - mvn -B -Plibrary verify
   - git clone https://github.com/perfectsense/travis-s3-deploy.git && travis-s3-deploy/deploy.sh
 ```
 
