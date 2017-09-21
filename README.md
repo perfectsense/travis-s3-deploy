@@ -33,16 +33,20 @@ branches:
   only:
     - develop
     - master
-    - release
+    - /^release-.*$/
+
+before_script:
+  - if [ $TRAVIS_PULL_REQUEST == false ]; then mvn versions:set -DnewVersion='${project.version}'-${TRAVIS_COMMIT:0:8}; fi
 
 env:
   global:
     - DEPLOY_BUCKET=exampleco-builds
     - DEPLOY_BUCKET_PREFIX=exampleco # optional if using a shared deployment bucket
     - DEPLOY_BRANCHES=develop\|release # optional - all branches defined in "branches" above is the default
+    - DEPLOY_SOURCE_DIR=$TRAVIS_BUILD_DIR/site/target # optional - if your war file is somewhere other than ./target
 
 script:
-  - mvn -B -Plibrary verify
+  - MAVEN_OPTS='-Xmx2048m' mvn -B -Plibrary verify
   - git clone https://github.com/perfectsense/travis-s3-deploy.git && travis-s3-deploy/deploy.sh
 ```
 
