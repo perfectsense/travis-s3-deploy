@@ -36,7 +36,7 @@ branches:
     - /^release-.*$/
 
 before_script:
-  - if [ $TRAVIS_PULL_REQUEST == false ]; then mvn versions:set -DnewVersion='${project.version}'-${TRAVIS_COMMIT:0:8}; fi
+  - mvn versions:set -DnewVersion='${project.version}'-$([ $TRAVIS_PULL_REQUEST == false ] && echo ${TRAVIS_COMMIT:0:8} || echo "PR"${TRAVIS_PULL_REQUEST})
 
 env:
   global:
