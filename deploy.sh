@@ -50,7 +50,7 @@ done
 
 files=${DEPLOY_FILES:-$discovered_files}
 
-if [[ -z "$files" ]]
+if [[ -z "${files// }" ]]
 then
     echo "Files not found; not deploying."
     exit 1
