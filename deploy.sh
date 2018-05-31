@@ -34,7 +34,7 @@ then
 
 elif [[ -z "$DEPLOY_BRANCHES" || "$TRAVIS_BRANCH" =~ "$DEPLOY_BRANCHES" ]]
 then
-    target_path=deploy/$TRAVIS_BRANCH/$TRAVIS_BUILD_NUMBER
+    target_path=deploy/${TRAVIS_BRANCH////.}/$TRAVIS_BUILD_NUMBER
 
 else
     echo "Not deploying."
