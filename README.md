@@ -46,6 +46,10 @@ branches:
     - master
     - /^release-.*$/
 
+cache:
+  directories:
+    - $HOME/.m2
+
 env:
   global:
     - DEPLOY_BUCKET=exampleco-builds
