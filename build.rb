@@ -30,6 +30,10 @@ class MavenArtifact
     @path = path
   end
 
+  def local_repo_unversioned_path
+    LOCAL_M2_DIR + File.join(group_id.to_s.gsub(/\./, "/"), artifact_id.to_s)
+  end
+
   def local_repo_path
     LOCAL_M2_DIR + File.join(group_id.to_s.gsub(/\./, "/"), artifact_id.to_s, \
       version.to_s)
@@ -367,9 +371,28 @@ def unpack_cached_artifacts(artifacts)
   end
 end
 
+def cleanup_old_local_files(artifacts)
+  for artifact in artifacts
+    debug_log "LOCAL PATH: " + artifact.local_repo_unversioned_path
+    local_versioned_path = artifact.local_repo_path
+    Dir.glob(File.join(artifact.local_repo_unversioned_path.to_s, "**")) { |f|
+      unless f.start_with? local_versioned_path
+        unless File.directory? f
+          debug_log "DELETING: " + f
+          File.delete f
+        end
+      end
+    }
+  end
+end
+
 def install(build_artifacts)
   modules = build_artifacts.map{|a| "#{a.group_id}:#{a.artifact_id}"}.join(",")
   system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules}' #{test_option}" or abort "Build failed!"
+end
+
+def build_site(site_artifact)
+  system_stdout "mvn #{OPTIONS[:maven_options]} verify -amd -pl '#{site_artifact.group_id}:#{site_artifact.artifact_id}' #{test_option}" or abort "Build failed!"
 end
 
 def build
@@ -433,8 +456,12 @@ def build
     puts "Nothing to do!"
 
   else
+    # clean up the .m2 cache or it'll get huge
+    cleanup_old_local_files all_artifacts
     # build and install the artifacts that need to be built
-    install build_artifacts
+    install build_artifacts - [site_artifact]
+    # site artifact doesn't need to be installed to save space
+    build_site site_artifact
   end
 
 end

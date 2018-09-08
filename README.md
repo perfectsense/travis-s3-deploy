@@ -26,6 +26,8 @@ artifacts that have not changed. It only works if your project follows the
 multi-module conventions as established in Brightspot's express-archetype. Minor
 deviations are possible via command line parameters.
 
+To speed up pull request builds even further, use the parameter `--skip-tests-if-pr`.
+
 ## Usage
 
 Your .travis.yml should look something like this:
@@ -55,7 +57,7 @@ before_script:
   - git clone https://github.com/perfectsense/travis-s3-deploy.git
 
 script:
-  - travis-s3-deploy/build.rb && travis-s3-deploy/deploy.sh
+  - travis-s3-deploy/build.rb --skip-tests-if-pr && travis-s3-deploy/deploy.sh
 ```
 
 Note that any of the above environment variables can be set in Travis, and do not need to be included in your .travis.yml. `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` should always be set to your S3 bucket credentials as environment variables in Travis, not this file.
