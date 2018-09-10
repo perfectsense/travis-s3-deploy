@@ -386,12 +386,14 @@ def cleanup_old_local_files(artifacts)
   end
 end
 
-def install(build_artifacts)
+def install(build_artifacts, site_artifact)
+  # remove the site artifact from build_artifacts. it's built separately
+  build_artifacts = build_artifacts - [site_artifact]
   modules = build_artifacts.map{|a| "#{a.group_id}:#{a.artifact_id}"}.join(",")
-  system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules}' #{test_option}" or abort "Build failed!"
-end
+  not_site = "!#{site_artifact.group_id}:#{site_artifact.artifact_id}"
 
-def build_site(site_artifact)
+  system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules},#{not_site}' #{test_option}" or abort "Build failed!"
+
   system_stdout "mvn #{OPTIONS[:maven_options]} verify -amd -pl '#{site_artifact.group_id}:#{site_artifact.artifact_id}' #{test_option}" or abort "Build failed!"
 end
 
@@ -459,9 +461,7 @@ def build
     # clean up the .m2 cache or it'll get huge
     cleanup_old_local_files all_artifacts
     # build and install the artifacts that need to be built
-    install build_artifacts - [site_artifact]
-    # site artifact doesn't need to be installed to save space
-    build_site site_artifact
+    install build_artifacts, site_artifact
   end
 
 end
