@@ -392,15 +392,22 @@ def install(build_artifacts, site_artifact)
   modules = build_artifacts.map{|a| "#{a.group_id}:#{a.artifact_id}"}.join(",")
   not_site = "!#{site_artifact.group_id}:#{site_artifact.artifact_id}"
 
+  puts "travis_fold:start:build"
   system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules},#{not_site}' #{test_option}" or abort "Build failed!"
+  puts "travis_fold:end:build"
 
+  puts "travis_fold:start:build_site"
   system_stdout "mvn #{OPTIONS[:maven_options]} verify -amd -pl '#{site_artifact.group_id}:#{site_artifact.artifact_id}' #{test_option}" or abort "Build failed!"
+  puts "travis_fold:end:build_site"
 end
 
 def build
 
+  puts "travis_fold:start:unshallow_repo"
   unshallow_repo
+  puts "travis_fold:end:unshallow_repo"
 
+  puts "travis_fold:start:update_versions"
   # find all artifacts in the reactor
   reactor_artifacts = maven_module_list('.', true) + ['.']
 
@@ -432,7 +439,6 @@ def build
   if ENV["TRAVIS_PULL_REQUEST"] && ENV["TRAVIS_PULL_REQUEST"] != "false"
     # 1.0-PR123
     site_artifact = maven_module_info(site_module_path)
-    puts site_artifact.version
     site_artifact_version = SemVersion.new(site_artifact.version.to_s)
     site_artifact.version = site_artifact_version.major.to_s + '.' + site_artifact_version.minor.to_s + "-PR" + ENV["TRAVIS_PULL_REQUEST"]
 
@@ -450,15 +456,23 @@ def build
   # only build artifacts that aren't installed in the local maven repo
   build_artifacts = select_uncached_modules(all_artifacts, reactor_artifacts)
   cached_artifacts = all_artifacts - build_artifacts
+  puts "travis_fold:end:update_versions"
 
   if build_artifacts.empty?
     puts "Nothing to do!"
 
   else
+
+    debug_log "travis_fold:start:unpack_cached_artifacts"
     # unpack cached artifacts for integration tests
     unpack_cached_artifacts cached_artifacts
+    debug_log "travis_fold:end:unpack_cached_artifacts"
+
+    debug_log "travis_fold:start:cleanup_old_local_files"
     # clean up the .m2 cache or it'll get huge
     cleanup_old_local_files all_artifacts
+    debug_log "travis_fold:end:cleanup_old_local_files"
+
     # build and install the artifacts that need to be built
     install build_artifacts, site_artifact
   end
