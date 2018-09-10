@@ -451,13 +451,12 @@ def build
   build_artifacts = select_uncached_modules(all_artifacts, reactor_artifacts)
   cached_artifacts = all_artifacts - build_artifacts
 
-  # unpack cached artifacts for integration tests
-  unpack_cached_artifacts cached_artifacts
-
   if build_artifacts.empty?
     puts "Nothing to do!"
 
   else
+    # unpack cached artifacts for integration tests
+    unpack_cached_artifacts cached_artifacts
     # clean up the .m2 cache or it'll get huge
     cleanup_old_local_files all_artifacts
     # build and install the artifacts that need to be built
