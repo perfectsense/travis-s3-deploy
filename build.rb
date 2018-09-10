@@ -140,6 +140,33 @@ def debug_log(message)
   puts message if OPTIONS[:verbose]
 end
 
+CURRENT_TRAVIS = {activity: nil, start_time: nil, timer_id: nil}
+
+def travis_start(activity)
+  if CURRENT_TRAVIS[:activity] != nil
+    raise "Nested travis_start is not supported!"
+  end
+  start_time = Time.now.to_f * 1000000000
+  CURRENT_TRAVIS[:activity] = activity
+  CURRENT_TRAVIS[:timer_id] = ([start_time].pack "I").to_s.each_byte.map { |b| b.to_s(16) }.join
+  CURRENT_TRAVIS[:start_time] = start_time.to_i
+  puts "travis_fold:start:#{CURRENT_TRAVIS[:activity]}"
+  puts "travis_time:start:#{CURRENT_TRAVIS[:timer_id]}"
+end
+
+def travis_end
+  if CURRENT_TRAVIS[:activity] == nil
+    raise "Can't travis_end without travis_start!"
+  end
+  end_time = (Time.now.to_f * 1000000000).to_i
+  duration = end_time - CURRENT_TRAVIS[:start_time]
+  puts "travis_time:end:#{CURRENT_TRAVIS[:timer_id]}:start=#{CURRENT_TRAVIS[:start_time]},finish=#{end_time},duration=#{duration}"
+  puts "travis_fold:end:#{CURRENT_TRAVIS[:activity]}"
+  CURRENT_TRAVIS[:activity] = nil
+  CURRENT_TRAVIS[:timer_id] = nil
+  CURRENT_TRAVIS[:start_time] = nil
+end
+
 # Finds the element targeted by the given XPath expression for the pom.xml of
 # the given module_path and returns the text value of the first result.
 def maven_xpath(module_path, expr)
@@ -392,22 +419,22 @@ def install(build_artifacts, site_artifact)
   modules = build_artifacts.map{|a| "#{a.group_id}:#{a.artifact_id}"}.join(",")
   not_site = "!#{site_artifact.group_id}:#{site_artifact.artifact_id}"
 
-  puts "travis_fold:start:build"
+  travis_start "build"
   system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules},#{not_site}' #{test_option}" or abort "Build failed!"
-  puts "travis_fold:end:build"
+  travis_end
 
-  puts "travis_fold:start:build_site"
+  travis_start "build_site"
   system_stdout "mvn #{OPTIONS[:maven_options]} verify -amd -pl '#{site_artifact.group_id}:#{site_artifact.artifact_id}' #{test_option}" or abort "Build failed!"
-  puts "travis_fold:end:build_site"
+  travis_end
 end
 
 def build
 
-  puts "travis_fold:start:unshallow_repo"
+  travis_start "unshallow_repo"
   unshallow_repo
-  puts "travis_fold:end:unshallow_repo"
+  travis_end
 
-  puts "travis_fold:start:update_versions"
+  travis_start "update_versions"
   # find all artifacts in the reactor
   reactor_artifacts = maven_module_list('.', true) + ['.']
 
@@ -456,22 +483,22 @@ def build
   # only build artifacts that aren't installed in the local maven repo
   build_artifacts = select_uncached_modules(all_artifacts, reactor_artifacts)
   cached_artifacts = all_artifacts - build_artifacts
-  puts "travis_fold:end:update_versions"
+  travis_end
 
   if build_artifacts.empty?
     puts "Nothing to do!"
 
   else
 
-    debug_log "travis_fold:start:unpack_cached_artifacts"
+    travis_start "unpack_cached_artifacts"
     # unpack cached artifacts for integration tests
     unpack_cached_artifacts cached_artifacts
-    debug_log "travis_fold:end:unpack_cached_artifacts"
+    travis_end
 
-    debug_log "travis_fold:start:cleanup_old_local_files"
+    travis_start "cleanup_old_local_files"
     # clean up the .m2 cache or it'll get huge
     cleanup_old_local_files all_artifacts
-    debug_log "travis_fold:end:cleanup_old_local_files"
+    travis_end
 
     # build and install the artifacts that need to be built
     install build_artifacts, site_artifact
