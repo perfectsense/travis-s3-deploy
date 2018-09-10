@@ -49,6 +49,8 @@ branches:
 cache:
   directories:
     - $HOME/.m2
+    - node
+    - node_modules
 
 env:
   global:
