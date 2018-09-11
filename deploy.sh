@@ -58,7 +58,7 @@ fi
 
 target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
 
-if [[ -z `which aws` ]]; then
+if ! [ -x "$(command -v aws)" ]; then
     pip install --upgrade --user awscli
     export PATH=~/.local/bin:$PATH
 fi
