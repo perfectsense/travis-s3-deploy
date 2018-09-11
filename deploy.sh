@@ -58,6 +58,13 @@ fi
 
 target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
 
+timer_id=$RANDOM
+start_time=$(date +%s%N)
+start_time=${start_time/N/000000000} # in case %N isn't supported
+
+echo "travis_fold:start:s3deploy"
+echo "travis_time:start:$timer_id"
+
 if ! [ -x "$(command -v aws)" ]; then
     pip install --upgrade --user awscli
     export PATH=~/.local/bin:$PATH
@@ -98,3 +105,9 @@ then
         done
     done
 fi
+
+end_time=$(date +%s%N)
+end_time=${end_time/N/000000000} # in case %N isn't supported
+duration=$(expr $end_time - $start_time)
+echo "travis_time:end:$timer_id:start=$start_time,finish=$end_time,duration=$duration"
+echo "travis_fold:end:s3deploy"
