@@ -58,8 +58,10 @@ fi
 
 target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
 
-pip install --upgrade --user awscli
-export PATH=~/.local/bin:$PATH
+if [[ -z `which aws` ]]; then
+    pip install --upgrade --user awscli
+    export PATH=~/.local/bin:$PATH
+fi
 
 for file in $files
 do
