@@ -180,10 +180,15 @@ end
 # Finds the elements targeted by the given XPath expression for the pom.xml of
 # the given module_path and returns the text values as an iterable.
 def maven_xpath_list(module_path, expr)
-  xmlfile = File.new("#{module_path}/pom.xml")
-  xmldoc = Document.new(xmlfile)
+  pomSrc = "#{module_path}/pom.xml"
+  if File.exist? pomSrc
+    xmlfile = File.new(pomSrc)
+    xmldoc = Document.new(xmlfile)
 
-  XPath.each(xmldoc, "#{expr}/text()")
+    XPath.each(xmldoc, "#{expr}/text()")
+  else
+    return []
+  end
 end
 
 # Calculates the Maven artifact info (groupId / artifactId / version) for the
