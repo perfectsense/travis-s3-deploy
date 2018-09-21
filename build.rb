@@ -170,9 +170,11 @@ end
 # Finds the element targeted by the given XPath expression for the pom.xml of
 # the given module_path and returns the text value of the first result.
 def maven_xpath(module_path, expr)
-  list = maven_xpath_list(module_path, expr)
-  list.each do |item|
-    return item
+  if File.exist? "#{module_path}/pom.xml"
+    list = maven_xpath_list(module_path, expr)
+    list.each do |item|
+      return item
+    end
   end
   nil
 end
@@ -180,10 +182,15 @@ end
 # Finds the elements targeted by the given XPath expression for the pom.xml of
 # the given module_path and returns the text values as an iterable.
 def maven_xpath_list(module_path, expr)
-  xmlfile = File.new("#{module_path}/pom.xml")
-  xmldoc = Document.new(xmlfile)
+  pomSrc = "#{module_path}/pom.xml"
+  if File.exist? pomSrc
+    xmlfile = File.new(pomSrc)
+    xmldoc = Document.new(xmlfile)
 
-  XPath.each(xmldoc, "#{expr}/text()")
+    XPath.each(xmldoc, "#{expr}/text()")
+  else
+    return []
+  end
 end
 
 # Calculates the Maven artifact info (groupId / artifactId / version) for the
@@ -312,17 +319,20 @@ end
 def update_versions(artifacts)
 
   artifacts.each do |artifact|
-    File.open(artifact.path + '/pom.xml') do |f|
-      pom = Document.new(f)
+    article = artifact.path + '/pom.xml'
+    if File.exist? article
+      File.open(article) do |f|
+        pom = Document.new(f)
 
-      set_version(artifact, pom, artifact.version)
-      for dependency in artifacts
-        set_dependency_version(artifact, pom, dependency.group_id, dependency.artifact_id, dependency.version)
-      end
+        set_version(artifact, pom, artifact.version)
+        for dependency in artifacts
+          set_dependency_version(artifact, pom, dependency.group_id, dependency.artifact_id, dependency.version)
+        end
 
-      File.open(artifact.path + '/pom.xml', 'w') do |wf|
-        formatter = REXML::Formatters::Default.new
-        formatter.write(pom, wf)
+        File.open(artifact.path + '/pom.xml', 'w') do |wf|
+          formatter = REXML::Formatters::Default.new
+          formatter.write(pom, wf)
+        end
       end
     end
   end
@@ -335,7 +345,14 @@ def versioned_maven_module(module_path, file_paths)
   commit_hash = `git rev-list HEAD -- #{file_paths_str} | head -1`.to_s.strip[0, 6]
   artifact = maven_module_info(module_path)
   version = SemVersion.new(artifact.version.to_s)
-  artifact.version = version.major + '.' + version.minor + '.' + commit_count \
+
+  if (version.minor == nil)
+    version.minor = '0'
+  end
+
+  artifact.version = version.major \
+      + '.' + version.minor \
+      + '.' + commit_count \
       + '-x' + commit_hash
   artifact
 end
