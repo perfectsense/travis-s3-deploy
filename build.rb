@@ -8,7 +8,7 @@ $stdout.sync = true
 
 LOCAL_M2_DIR = ENV['HOME'] + "/.m2/repository/"
 
-ENV["MAVEN_OPTS"] = "#{ENV["MAVEN_OPTS"]} -Xmx2g"
+ENV["MAVEN_OPTS"] = "#{ENV["MAVEN_OPTS"]} -Xmx6g"
 
 OPTIONS = {}
 OPTIONS[:frontend_files] = "styleguide package.json gulpfile.js yarn.lock .npmrc"
