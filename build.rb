@@ -458,9 +458,11 @@ def install(build_artifacts, site_artifact)
   modules = build_artifacts.map{|a| "#{a.group_id}:#{a.artifact_id}"}.join(",")
   not_site = "!#{site_artifact.group_id}:#{site_artifact.artifact_id}"
 
-  travis_start "build"
-  system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules},#{not_site}' #{test_option}" or abort "Build failed!"
-  travis_end
+  unless build_artifacts.empty?
+    travis_start "build"
+    system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules},#{not_site}' #{test_option}" or abort "Build failed!"
+    travis_end
+  end
 
   travis_start "build_site"
   system_stdout "mvn #{OPTIONS[:maven_options]} verify -amd -pl '#{site_artifact.group_id}:#{site_artifact.artifact_id}' #{test_option}" or abort "Build failed!"
