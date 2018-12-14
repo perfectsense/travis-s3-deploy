@@ -419,15 +419,37 @@ def cleanup_old_local_files(artifacts)
   for artifact in artifacts
     debug_log "LOCAL PATH: " + artifact.local_repo_unversioned_path
     local_versioned_path = artifact.local_repo_path
-    Dir.glob(File.join(artifact.local_repo_unversioned_path.to_s, "**")) { |f|
+    Dir.glob(File.join(artifact.local_repo_unversioned_path.to_s, "**/*")) { |f|
       unless f.start_with? local_versioned_path
         unless File.directory? f
-          debug_log "DELETING: " + f
+          debug_log "OLD PROJECT ARTIFACT, DELETING: " + f
           File.delete f
         end
       end
     }
   end
+  Dir.glob(File.join(LOCAL_M2_DIR, "**/*")) { |f|
+    unless File.directory? f
+      to_delete = true
+      for artifact in artifacts
+        if f.start_with? artifact.local_repo_unversioned_path
+          to_delete = false
+        end
+      end
+      if to_delete
+        debug_log "NOT PROJECT ARTIFACT, DELETING: " + f
+        File.delete f
+      end
+    end
+  }
+  Dir.glob(File.join(LOCAL_M2_DIR, "**/*")).reverse { |f|
+    if File.directory? f
+      if (Dir.entries(f) - %w{ . .. }).empty?
+        debug_log "EMPTY DIRECTORY, DELETING: " + f
+        Dir.delete f
+      end
+    end
+  }
 end
 
 def install(build_artifacts, site_artifact)
