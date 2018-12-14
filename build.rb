@@ -534,13 +534,13 @@ def build
     unpack_cached_artifacts cached_artifacts
     travis_end
 
+    # build and install the artifacts that need to be built
+    install build_artifacts, site_artifact
+
     travis_start "cleanup_old_local_files"
     # clean up the .m2 cache or it'll get huge
     cleanup_old_local_files all_artifacts
     travis_end
-
-    # build and install the artifacts that need to be built
-    install build_artifacts, site_artifact
   end
 
 end
