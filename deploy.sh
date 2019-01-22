@@ -12,6 +12,7 @@ set -e -u
 # AWS_SECRET_ACCESS_KEY = AWS secret
 # AWS_SESSION_TOKEN = optional AWS session token for temp keys
 # PURGE_OLDER_THAN_DAYS = Files in the .../deploy and .../pull-request prefixes in S3 older than this number of days will be deleted; leave blank for 90, 0 to disable.
+# SKIP_DEPENDENCY_LIST = true to skip the "mvn dependency:list" generation and deployment
 
 if [[ -z "${DEPLOY_BUCKET}" ]]
 then
@@ -27,6 +28,8 @@ DEPLOY_EXTENSIONS=${DEPLOY_EXTENSIONS:-"jar war zip"}
 DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$TRAVIS_BUILD_DIR/target}
 
 PURGE_OLDER_THAN_DAYS=${PURGE_OLDER_THAN_DAYS:-"90"}
+
+SKIP_DEPENDENCY_LIST=${SKIP_DEPENDENCY_LIST:-"false"}
 
 if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]
 then
@@ -65,6 +68,17 @@ start_time=${start_time/N/000000000} # in case %N isn't supported
 echo "travis_fold:start:s3deploy"
 echo "travis_time:start:$timer_id"
 
+if [[ "$SKIP_DEPENDENCY_LIST" != "true" ]]
+then
+    # Write dependency-list.txt and include it in the upload
+    mvn -q -B dependency:list -Dsort=true -DoutputType=text -DoutputFile=target/dependency-list.txt || echo "dependency-tree.txt generation failed"
+
+    if [[ -f "$DEPLOY_SOURCE_DIR/dependency-list.txt" ]]
+    then
+        files+=" $DEPLOY_SOURCE_DIR/dependency-list.txt"
+    fi
+fi
+
 if ! [ -x "$(command -v aws)" ]; then
     pip install --upgrade --user awscli
     export PATH=~/.local/bin:$PATH
@@ -80,6 +94,7 @@ then
     echo "Cleaning up builds in S3 older than $PURGE_OLDER_THAN_DAYS days . . ."
 
     cleanup_prefix=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}
+    # TODO: this works with GNU date only
     older_than_ts=`date -d"-${PURGE_OLDER_THAN_DAYS} days" +%s`
 
     for suffix in deploy pull-request
