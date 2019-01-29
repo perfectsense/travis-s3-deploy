@@ -12,7 +12,7 @@ set -e -u
 # AWS_SECRET_ACCESS_KEY = AWS secret
 # AWS_SESSION_TOKEN = optional AWS session token for temp keys
 # PURGE_OLDER_THAN_DAYS = Files in the .../deploy and .../pull-request prefixes in S3 older than this number of days will be deleted; leave blank for 90, 0 to disable.
-# SKIP_DEPENDENCY_LIST = true to skip the dependency-list.txt deployment. Note that this script does not generate that file, it only looks for it in $DEPLOY_SOURCE_DIR
+# SKIP_DEPENDENCY_LIST = true to skip the "mvn dependency:list" generation and deployment
 
 if [[ -z "${DEPLOY_BUCKET}" ]]
 then
@@ -45,6 +45,49 @@ else
 
 fi
 
+# BEGIN Travis fold/timer support
+
+activity=""
+timer_id=""
+start_time=""
+
+travis_start() {
+    if [[ -n "$activity" ]]
+    then
+        echo "Nested travis_start is not supported!"
+        return
+    fi
+
+    activity="$1"
+    timer_id=$RANDOM
+    start_time=$(date +%s%N)
+    start_time=${start_time/N/000000000} # in case %N isn't supported
+
+    echo "travis_fold:start:$activity"
+    echo "travis_time:start:$timer_id"
+}
+
+travis_end() {
+    if [[ -z "$activity" ]]
+    then
+        echo "Can't travis_end without travis_start!"
+        return
+    fi
+
+    end_time=$(date +%s%N)
+    end_time=${end_time/N/000000000} # in case %N isn't supported
+    duration=$(expr $end_time - $start_time)
+    echo "travis_time:end:$timer_id:start=$start_time,finish=$end_time,duration=$duration"
+    echo "travis_fold:end:$activity"
+
+    # reset
+    activity=""
+    timer_id=""
+    start_time=""
+}
+
+# END Travis fold/timer support
+
 discovered_files=""
 for ext in ${DEPLOY_EXTENSIONS}
 do
@@ -61,18 +104,12 @@ fi
 
 target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
 
-timer_id=$RANDOM
-start_time=$(date +%s%N)
-start_time=${start_time/N/000000000} # in case %N isn't supported
-
-echo "travis_fold:start:s3deploy"
-echo "travis_time:start:$timer_id"
-
 if [[ "$SKIP_DEPENDENCY_LIST" != "true" ]]
 then
     # Write dependency-list.txt and include it in the upload
-    # TODO: Move this to build.rb and only run it in the site module
-    # mvn -q -B dependency:list -Dsort=true -DoutputType=text -DoutputFile=target/dependency-list.txt || echo "dependency-tree.txt generation failed"
+    travis_start "dependency_list"
+    mvn -q -B dependency:list -Dsort=true -DoutputType=text -DoutputFile=target/dependency-list.txt || echo "dependency-tree.txt generation failed"
+    travis_end
 
     if [[ -f "$DEPLOY_SOURCE_DIR/dependency-list.txt" ]]
     then
@@ -81,17 +118,22 @@ then
 fi
 
 if ! [ -x "$(command -v aws)" ]; then
+    travis_start "pip"
     pip install --upgrade --user awscli
+    travis_end
     export PATH=~/.local/bin:$PATH
 fi
 
+travis_start "aws_cp"
 for file in $files
 do
     aws s3 cp $file s3://$DEPLOY_BUCKET/$target
 done
+travis_end
 
 if [[ $PURGE_OLDER_THAN_DAYS -ge 1 ]]
 then
+    travis_start "clean_s3"
     echo "Cleaning up builds in S3 older than $PURGE_OLDER_THAN_DAYS days . . ."
 
     cleanup_prefix=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}
@@ -120,10 +162,6 @@ then
             fi
         done
     done
+    travis_end
 fi
 
-end_time=$(date +%s%N)
-end_time=${end_time/N/000000000} # in case %N isn't supported
-duration=$(expr $end_time - $start_time)
-echo "travis_time:end:$timer_id:start=$start_time,finish=$end_time,duration=$duration"
-echo "travis_fold:end:s3deploy"
