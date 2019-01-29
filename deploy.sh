@@ -12,7 +12,7 @@ set -e -u
 # AWS_SECRET_ACCESS_KEY = AWS secret
 # AWS_SESSION_TOKEN = optional AWS session token for temp keys
 # PURGE_OLDER_THAN_DAYS = Files in the .../deploy and .../pull-request prefixes in S3 older than this number of days will be deleted; leave blank for 90, 0 to disable.
-# SKIP_DEPENDENCY_LIST = true to skip the dependency-list.txt deployment. Note that this script does not generate that file, it only looks for it in $DEPLOY_SOURCE_DIR
+# SKIP_DEPENDENCY_LIST = true to skip the "mvn dependency:list" generation and deployment
 
 if [[ -z "${DEPLOY_BUCKET}" ]]
 then
@@ -71,8 +71,7 @@ echo "travis_time:start:$timer_id"
 if [[ "$SKIP_DEPENDENCY_LIST" != "true" ]]
 then
     # Write dependency-list.txt and include it in the upload
-    # TODO: Move this to build.rb and only run it in the site module
-    # mvn -q -B dependency:list -Dsort=true -DoutputType=text -DoutputFile=target/dependency-list.txt || echo "dependency-tree.txt generation failed"
+    mvn -q -B dependency:list -Dsort=true -DoutputType=text -DoutputFile=target/dependency-list.txt || echo "dependency-tree.txt generation failed"
 
     if [[ -f "$DEPLOY_SOURCE_DIR/dependency-list.txt" ]]
     then
