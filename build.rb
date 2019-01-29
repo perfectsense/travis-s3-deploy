@@ -3,6 +3,7 @@
 require 'rexml/document'
 include REXML
 require 'optparse'
+require 'time'
 
 $stdout.sync = true
 
@@ -17,6 +18,7 @@ OPTIONS[:themes_module_path] = "themes"
 OPTIONS[:frontend_module_path] = "frontend"
 OPTIONS[:parent_module_path] = "parent"
 OPTIONS[:maven_options] = "-B -Plibrary"
+OPTIONS[:maven_repo_stale_date] = Time.now - (86400*30)  # 30 days in seconds
 
 # Represents a Maven artifact, where the path is optional.
 class MavenArtifact
@@ -416,6 +418,7 @@ def unpack_cached_artifacts(artifacts)
 end
 
 def cleanup_old_local_files(artifacts)
+  puts "Removing Maven repository artifacts last modified before #{OPTIONS[:maven_repo_stale_date]}"
   for artifact in artifacts
     debug_log "LOCAL PATH: " + artifact.local_repo_unversioned_path
     local_versioned_path = artifact.local_repo_path
@@ -435,6 +438,9 @@ def cleanup_old_local_files(artifacts)
         if f.start_with? artifact.local_repo_unversioned_path
           to_delete = false
         end
+      end
+      if File.mtime(f) > OPTIONS[:maven_repo_stale_date]
+        to_delete = false
       end
       if to_delete
         debug_log "NOT PROJECT ARTIFACT, DELETING: " + f
@@ -586,6 +592,13 @@ if __FILE__ == $0
 
     opts.on("--maven-options=", "Maven options; default is \"#{OPTIONS[:maven_options]}\"") do |v|
       OPTIONS[:maven_options] = v
+    end
+
+    opts.accept(Time) do |time|
+      Time.strptime(time, "%F")
+    end
+    opts.on("--time=", Time, "Maven repo stale dependency date (YYYY-MM-DD); default is \"#{OPTIONS[:maven_repo_stale_date].strftime("%F")}\" (30 days ago)") do |v|
+      OPTIONS[:maven_repo_stale_date] = v
     end
   end.parse!
 
