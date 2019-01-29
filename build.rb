@@ -597,7 +597,7 @@ if __FILE__ == $0
     opts.accept(Time) do |time|
       Time.strptime(time, "%F")
     end
-    opts.on("--time=", Time, "Maven repo stale dependency date (YYYY-MM-DD); default is \"#{OPTIONS[:maven_repo_stale_date].strftime("%F")}\" (30 days ago)") do |v|
+    opts.on("--maven-stale-date=", Time, "Artifacts older than this in the Maven m2 repository will be removed (YYYY-MM-DD); default is \"#{OPTIONS[:maven_repo_stale_date].strftime("%F")}\" (30 days ago)") do |v|
       OPTIONS[:maven_repo_stale_date] = v
     end
   end.parse!
