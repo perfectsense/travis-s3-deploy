@@ -489,12 +489,14 @@ def install(build_artifacts, site_artifact, other_artifacts)
   end
 
   # last minute check to make sure all cached_artifacts are actually available
+  travis_start "dependencies_ok"
   if !dependencies_ok site_artifact
+    travis_end
     # build the other artifacts
     travis_start "build_other"
     system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{other_modules},#{not_site}' #{test_option}" or abort "Build failed!"
-    travis_end
   end
+  travis_end
 
   travis_start "build_site"
   system_stdout "mvn #{OPTIONS[:maven_options]} verify -amd -pl '#{site_artifact.group_id}:#{site_artifact.artifact_id}' #{test_option}" or abort "Build failed!"
