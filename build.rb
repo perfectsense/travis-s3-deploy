@@ -474,15 +474,25 @@ def dependencies_ok(artifact)
   system("mvn dependency:resolve -pl '#{artifact.group_id}:#{artifact.artifact_id}'")
 end
 
-def install(build_artifacts, site_artifact)
+def install(build_artifacts, site_artifact, other_artifacts)
   # remove the site artifact from build_artifacts. it's built separately
   build_artifacts = build_artifacts - [site_artifact]
+  other_artifacts = other_artifacts - [site_artifact]
   modules = build_artifacts.map{|a| "#{a.group_id}:#{a.artifact_id}"}.join(",")
+  other_modules = other_artifacts.map{|a| "#{a.group_id}:#{a.artifact_id}"}.join(",")
   not_site = "!#{site_artifact.group_id}:#{site_artifact.artifact_id}"
 
   unless build_artifacts.empty?
     travis_start "build"
     system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules},#{not_site}' #{test_option}" or abort "Build failed!"
+    travis_end
+  end
+
+  # last minute check to make sure all cached_artifacts are actually available
+  if !dependencies_ok site_artifact
+    # build the other artifacts
+    travis_start "build_other"
+    system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{other_modules},#{not_site}' #{test_option}" or abort "Build failed!"
     travis_end
   end
 
@@ -546,12 +556,7 @@ def build
   # only build artifacts that aren't installed in the local maven repo
   build_artifacts = select_uncached_modules(all_artifacts, reactor_artifacts)
   cached_artifacts = all_artifacts - build_artifacts
-
-  # last minute check to make sure all cached_artifacts are actually available
-  if !dependencies_ok site_artifact
-    # just build all modules
-    build_artifacts = select_reactor_modules(all_artifacts, reactor_artifacts)
-  end
+  other_artifacts = select_reactor_modules(all_artifacts, reactor_artifacts) - build_artifacts
   travis_end
 
   if build_artifacts.empty?
@@ -565,7 +570,7 @@ def build
     travis_end
 
     # build and install the artifacts that need to be built
-    install build_artifacts, site_artifact
+    install build_artifacts, site_artifact, other_artifacts
 
     travis_start "cleanup_old_local_files"
     # clean up the .m2 cache or it'll get huge
