@@ -280,6 +280,18 @@ def select_uncached_modules(all_modules, reactor_modules)
   new_modules
 end
 
+# Fetch an array of all mave module paths that are in the reactor
+def select_reactor_modules(all_modules, reactor_modules)
+
+  new_modules = Array.new
+
+  all_modules.each do |mod|
+      new_modules.push(mod) if reactor_modules.include? mod.path
+  end
+
+  new_modules
+end
+
 def system_stdout(command)
   puts "COMMAND: #{command}"
   system(command, out: $stdout, err: :out)
@@ -458,6 +470,10 @@ def cleanup_old_local_files(artifacts)
   }
 end
 
+def dependencies_ok(artifact)
+  system("mvn dependency:resolve -pl '#{artifact.group_id}:#{artifact.artifact_id}'")
+end
+
 def install(build_artifacts, site_artifact)
   # remove the site artifact from build_artifacts. it's built separately
   build_artifacts = build_artifacts - [site_artifact]
@@ -530,6 +546,12 @@ def build
   # only build artifacts that aren't installed in the local maven repo
   build_artifacts = select_uncached_modules(all_artifacts, reactor_artifacts)
   cached_artifacts = all_artifacts - build_artifacts
+
+  # last minute check to make sure all cached_artifacts are actually available
+  if !dependencies_ok site_artifact
+    # just build all modules
+    build_artifacts = select_reactor_modules(all_artifacts, reactor_artifacts)
+  end
   travis_end
 
   if build_artifacts.empty?
