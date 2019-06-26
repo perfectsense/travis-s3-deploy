@@ -61,6 +61,7 @@ env:
 
 before_script:
   - git clone https://github.com/perfectsense/travis-s3-deploy.git
+  - cp travis-s3-deploy/settings.xml ~/.m2/settings.xml
 
 script:
   - travis-s3-deploy/build.rb --skip-tests-if-pr && travis-s3-deploy/deploy.sh
