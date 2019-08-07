@@ -1,4 +1,4 @@
-#!/usr/bin/ruby -w
+#!/usr/local/bin/ruby -w
 
 require 'rexml/document'
 include REXML
@@ -142,31 +142,31 @@ def debug_log(message)
   puts message if OPTIONS[:verbose]
 end
 
-CURRENT_TRAVIS = {activity: nil, start_time: nil, timer_id: nil}
+CURRENT_CIRCLE = {activity: nil, start_time: nil, timer_id: nil}
 
-def travis_start(activity)
-  if CURRENT_TRAVIS[:activity] != nil
-    raise "Nested travis_start is not supported!"
+def circle_start(activity)
+  if CURRENT_CIRCLE[:activity] != nil
+    raise "Nested circle_start is not supported!"
   end
   start_time = Time.now.to_f * 1000000000
-  CURRENT_TRAVIS[:activity] = activity
-  CURRENT_TRAVIS[:timer_id] = ([start_time].pack "I").to_s.each_byte.map { |b| b.to_s(16) }.join
-  CURRENT_TRAVIS[:start_time] = start_time.to_i
-  puts "travis_fold:start:#{CURRENT_TRAVIS[:activity]}"
-  puts "travis_time:start:#{CURRENT_TRAVIS[:timer_id]}"
+  CURRENT_CIRCLE[:activity] = activity
+  CURRENT_CIRCLE[:timer_id] = ([start_time].pack "I").to_s.each_byte.map { |b| b.to_s(16) }.join
+  CURRENT_CIRCLE[:start_time] = start_time.to_i
+  puts "circle_fold:start:#{CURRENT_CIRCLE[:activity]}"
+  puts "circle_time:start:#{CURRENT_CIRCLE[:timer_id]}"
 end
 
-def travis_end
-  if CURRENT_TRAVIS[:activity] == nil
-    raise "Can't travis_end without travis_start!"
+def circle_end
+  if CURRENT_CIRCLE[:activity] == nil
+    raise "Can't circle_end without circle_start!"
   end
   end_time = (Time.now.to_f * 1000000000).to_i
-  duration = end_time - CURRENT_TRAVIS[:start_time]
-  puts "travis_time:end:#{CURRENT_TRAVIS[:timer_id]}:start=#{CURRENT_TRAVIS[:start_time]},finish=#{end_time},duration=#{duration}"
-  puts "travis_fold:end:#{CURRENT_TRAVIS[:activity]}"
-  CURRENT_TRAVIS[:activity] = nil
-  CURRENT_TRAVIS[:timer_id] = nil
-  CURRENT_TRAVIS[:start_time] = nil
+  duration = end_time - CURRENT_CIRCLE[:start_time]
+  puts "circle_time:end:#{CURRENT_CIRCLE[:timer_id]}:start=#{CURRENT_CIRCLE[:start_time]},finish=#{end_time},duration=#{duration}"
+  puts "circle_fold:end:#{CURRENT_CIRCLE[:activity]}"
+  CURRENT_CIRCLE[:activity] = nil
+  CURRENT_CIRCLE[:timer_id] = nil
+  CURRENT_CIRCLE[:start_time] = nil
 end
 
 # Finds the element targeted by the given XPath expression for the pom.xml of
@@ -371,7 +371,7 @@ def versioned_maven_module(module_path, file_paths)
   artifact
 end
 
-# Travis clones a shallow repo, unshallow it to get accurate commit counts
+# Travis cloned a shallow repo, unshallow it to get accurate commit counts (Not sure about Circle)
 def unshallow_repo
 
   if File.exist?(`git rev-parse --git-dir`.to_s.strip + '/shallow')
@@ -382,7 +382,7 @@ end
 
 
 def test_option
-  if OPTIONS[:skip_tests] || (OPTIONS[:skip_tests_if_pr] && ENV["TRAVIS_PULL_REQUEST"] != "false")
+  if OPTIONS[:skip_tests] || (OPTIONS[:skip_tests_if_pr] && ENV["CIRCLE_PULL_REQUEST"] != "false")
     "-Dmaven.test.skip=true"
   end
 end
@@ -483,33 +483,33 @@ def install(build_artifacts, site_artifact, other_artifacts)
   not_site = "!#{site_artifact.group_id}:#{site_artifact.artifact_id}"
 
   unless build_artifacts.empty?
-    travis_start "build"
+    circle_start "build"
     system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{modules},#{not_site}' #{test_option}" or abort "Build failed!"
-    travis_end
+    circle_end
   end
 
   # last minute check to make sure all cached_artifacts are actually available
-  travis_start "dependencies_ok"
+  circle_start "dependencies_ok"
   if !dependencies_ok site_artifact
-    travis_end
+    circle_end
     # build the other artifacts
-    travis_start "build_other"
+    circle_start "build_other"
     system_stdout "mvn #{OPTIONS[:maven_options]} install -amd -pl '#{other_modules},#{not_site}' #{test_option}" or abort "Build failed!"
   end
-  travis_end
+  circle_end
 
-  travis_start "build_site"
+  circle_start "build_site"
   system_stdout "mvn #{OPTIONS[:maven_options]} verify -amd -pl '#{site_artifact.group_id}:#{site_artifact.artifact_id}' #{test_option}" or abort "Build failed!"
-  travis_end
+  circle_end
 end
 
 def build
 
-  travis_start "unshallow_repo"
+  circle_start "unshallow_repo"
   unshallow_repo
-  travis_end
+  circle_end
 
-  travis_start "update_versions"
+  circle_start "update_versions"
   # find all artifacts in the reactor
   reactor_artifacts = maven_module_list('.', true) + ['.']
 
@@ -538,16 +538,16 @@ def build
   aggregate_artifact = versioned_maven_module('.', 'pom.xml')
 
   # Site artifact gets a special version number
-  if ENV["TRAVIS_PULL_REQUEST"] && ENV["TRAVIS_PULL_REQUEST"] != "false"
+  if ENV["CIRCLE_PULL_REQUEST"] && ENV["CIRCLE_PULL_REQUEST"] != "false"
     # 1.0-PR123
     site_artifact = maven_module_info(site_module_path)
     site_artifact_version = SemVersion.new(site_artifact.version.to_s)
-    site_artifact.version = site_artifact_version.major.to_s + '.' + site_artifact_version.minor.to_s + "-PR" + ENV["TRAVIS_PULL_REQUEST"]
+    site_artifact.version = site_artifact_version.major.to_s + '.' + site_artifact_version.minor.to_s + "-PR" + ENV["CIRCLE_PULL_REQUEST"]
 
-  elsif ENV["TRAVIS_BUILD_NUMBER"]
+  elsif ENV["CIRCLE_BUILD_NUMBER"]
     # 1.0.87-xabc123f+45 where 87 is the number of commits,
-    # abc123f is the commit sha, and 45 is the Travis build number
-    site_artifact.version = site_artifact.version + "+" + ENV["TRAVIS_BUILD_NUMBER"]
+    # abc123f is the commit sha, and 45 is the Circle build number
+    site_artifact.version = site_artifact.version + "+" + ENV["CIRCLE_BUILD_NUMBER"]
   end
 
   # Set versions in all pom.xml files
@@ -559,25 +559,25 @@ def build
   build_artifacts = select_uncached_modules(all_artifacts, reactor_artifacts)
   cached_artifacts = all_artifacts - build_artifacts
   other_artifacts = select_reactor_modules(all_artifacts, reactor_artifacts) - build_artifacts
-  travis_end
+  circle_end
 
   if build_artifacts.empty?
     puts "Nothing to do!"
 
   else
 
-    travis_start "unpack_cached_artifacts"
+    circle_start "unpack_cached_artifacts"
     # unpack cached artifacts for integration tests
     unpack_cached_artifacts cached_artifacts
-    travis_end
+    circle_end
 
     # build and install the artifacts that need to be built
     install build_artifacts, site_artifact, other_artifacts
 
-    travis_start "cleanup_old_local_files"
+    circle_start "cleanup_old_local_files"
     # clean up the .m2 cache or it'll get huge
     cleanup_old_local_files all_artifacts
-    travis_end
+    circle_end
   end
 
 end
@@ -595,7 +595,7 @@ if __FILE__ == $0
       OPTIONS[:skip_tests] = v
     end
 
-    opts.on("--skip-tests-if-pr", "Skip Tests if this is a Github Pull Request in Travis") do |v|
+    opts.on("--skip-tests-if-pr", "Skip Tests if this is a Github Pull Request in Circle") do |v|
       OPTIONS[:skip_tests_if_pr] = v
     end
 
