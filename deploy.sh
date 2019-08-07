@@ -7,7 +7,7 @@ set -e -u
 # DEPLOY_BUCKET_PREFIX = a directory prefix within your bucket
 # DEPLOY_BRANCHES = regex of branches to deploy; leave blank for all
 # DEPLOY_EXTENSIONS = whitespace-separated file exentions to deploy; leave blank for "jar war zip"
-# DEPLOY_FILES = whitespace-separated files to deploy; leave blank for $CIRCLE_BUILD_DIR/target/*.$extensions
+# DEPLOY_FILES = whitespace-separated files to deploy; leave blank for $CIRCLE_BUILD_URL/target/*.$extensions
 # AWS_ACCESS_KEY_ID = AWS access ID
 # AWS_SECRET_ACCESS_KEY = AWS secret
 # AWS_SESSION_TOKEN = optional AWS session token for temp keys
@@ -25,7 +25,7 @@ DEPLOY_BRANCHES=${DEPLOY_BRANCHES:-}
 
 DEPLOY_EXTENSIONS=${DEPLOY_EXTENSIONS:-"jar war zip"}
 
-DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$CIRCLE_BUILD_DIR/target}
+DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$CIRCLE_BUILD_URL/target}
 
 PURGE_OLDER_THAN_DAYS=${PURGE_OLDER_THAN_DAYS:-"90"}
 

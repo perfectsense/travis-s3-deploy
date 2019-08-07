@@ -544,10 +544,10 @@ def build
     site_artifact_version = SemVersion.new(site_artifact.version.to_s)
     site_artifact.version = site_artifact_version.major.to_s + '.' + site_artifact_version.minor.to_s + "-PR" + ENV["CIRCLE_PULL_REQUEST"]
 
-  elsif ENV["CIRCLE_BUILD_NUMBER"]
+  elsif ENV["CIRCLE_BUILD_NUM"]
     # 1.0.87-xabc123f+45 where 87 is the number of commits,
     # abc123f is the commit sha, and 45 is the Circle build number
-    site_artifact.version = site_artifact.version + "+" + ENV["CIRCLE_BUILD_NUMBER"]
+    site_artifact.version = site_artifact.version + "+" + ENV["CIRCLE_BUILD_NUM"]
   end
 
   # Set versions in all pom.xml files
