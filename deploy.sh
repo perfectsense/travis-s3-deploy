@@ -32,7 +32,7 @@ PURGE_OLDER_THAN_DAYS=${PURGE_OLDER_THAN_DAYS:-"90"}
 SKIP_DEPENDENCY_LIST=${SKIP_DEPENDENCY_LIST:-"false"}
 
 # CircleCI defined variable only for forked PRs
-CIRCLE_PR_NUMBER="'${CIRCLE_PR_NUMBER:-CIRCLE_PULL_REQUEST##*/}'"
+CIRCLE_PR_NUMBER="${CIRCLE_PR_NUMBER:-${CIRCLE_PULL_REQUEST##*/}}"
 
 if [[ ! -z "${CIRCLE_PR_NUMBER}" ]]
 then
@@ -94,7 +94,7 @@ circle_end() {
 discovered_files=""
 for ext in ${DEPLOY_EXTENSIONS}
 do
-    discovered_files+=" $(ls $DEPLOY_SOURCE_DIR/*.${ext} 2>/dev/null || true)"
+    discovered_files+=" $(ls ${DEPLOY_SOURCE_DIR/*.${ext} 2>/dev/null || true)"
 done
 
 files=${DEPLOY_FILES:-$discovered_files}
