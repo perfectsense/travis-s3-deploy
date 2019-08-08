@@ -94,7 +94,7 @@ circle_end() {
 discovered_files=""
 for ext in ${DEPLOY_EXTENSIONS}
 do
-    discovered_files+=" $(ls ${DEPLOY_SOURCE_DIR/*.${ext} 2>/dev/null || true)"
+    discovered_files+=" $(ls $DEPLOY_SOURCE_DIR/*.${ext} 2>/dev/null || true)"
 done
 
 files=${DEPLOY_FILES:-$discovered_files}
