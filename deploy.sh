@@ -25,17 +25,20 @@ DEPLOY_BRANCHES=${DEPLOY_BRANCHES:-}
 
 DEPLOY_EXTENSIONS=${DEPLOY_EXTENSIONS:-"jar war zip"}
 
-DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$CIRCLE_BUILD_URL/target}
+DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$CIRCLE_WORKING_DIRECTORY/target}
 
 PURGE_OLDER_THAN_DAYS=${PURGE_OLDER_THAN_DAYS:-"90"}
 
 SKIP_DEPENDENCY_LIST=${SKIP_DEPENDENCY_LIST:-"false"}
 
-if [[ "$CIRCLE_PULL_REQUEST" != "false" ]]
-then
-    target_path=pull-request/$CIRCLE_PULL_REQUEST
+# CircleCI defined variable only for forked PRs
+CIRCLE_PR_NUMBER="'${CIRCLE_PR_NUMBER:-CIRCLE_PULL_REQUEST##*/}'"
 
-elif [[ -z "$DEPLOY_BRANCHES" || "$CIRCLE_BRANCH" =~ "$DEPLOY_BRANCHES" ]]
+if [[ ! -z "${CIRCLE_PR_NUMBER}" ]]
+then
+    target_path=pull-request/${CIRCLE_PR_NUMBER}
+
+elif [[ -z "${DEPLOY_BRANCHES}" || "$CIRCLE_BRANCH" =~ "$DEPLOY_BRANCHES" ]]
 then
     target_path=deploy/${CIRCLE_BRANCH////.}/$CIRCLE_BUILD_NUMBER
 
@@ -45,7 +48,7 @@ else
 
 fi
 
-# BEGIN Travis fold/timer support
+# BEGIN Circle fold/timer support
 
 activity=""
 timer_id=""
@@ -86,7 +89,7 @@ circle_end() {
     start_time=""
 }
 
-# END Travis fold/timer support
+# END Circle fold/timer support
 
 discovered_files=""
 for ext in ${DEPLOY_EXTENSIONS}
