@@ -7,12 +7,14 @@ set -e -u
 # DEPLOY_BUCKET_PREFIX = a directory prefix within your bucket
 # DEPLOY_BRANCHES = regex of branches to deploy; leave blank for all
 # DEPLOY_EXTENSIONS = whitespace-separated file exentions to deploy; leave blank for "jar war zip"
-# DEPLOY_FILES = whitespace-separated files to deploy; leave blank for $TRAVIS_BUILD_DIR/target/*.$extensions
+# DEPLOY_FILES = whitespace-separated files to deploy; leave blank for $CIRCLE_BUILD_URL/target/*.$extensions
 # AWS_ACCESS_KEY_ID = AWS access ID
 # AWS_SECRET_ACCESS_KEY = AWS secret
 # AWS_SESSION_TOKEN = optional AWS session token for temp keys
 # PURGE_OLDER_THAN_DAYS = Files in the .../deploy and .../pull-request prefixes in S3 older than this number of days will be deleted; leave blank for 90, 0 to disable.
 # SKIP_DEPENDENCY_LIST = true to skip the "mvn dependency:list" generation and deployment
+
+CIRCLE_WORKING_DIRECTORY=${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}
 
 if [[ -z "${DEPLOY_BUCKET}" ]]
 then
@@ -25,19 +27,22 @@ DEPLOY_BRANCHES=${DEPLOY_BRANCHES:-}
 
 DEPLOY_EXTENSIONS=${DEPLOY_EXTENSIONS:-"jar war zip"}
 
-DEPLOY_SOURCE_DIR=${DEPLOY_SOURCE_DIR:-$TRAVIS_BUILD_DIR/target}
+DEPLOY_SOURCE_DIR=$CIRCLE_WORKING_DIRECTORY$DEPLOY_SOURCE_DIR
 
 PURGE_OLDER_THAN_DAYS=${PURGE_OLDER_THAN_DAYS:-"90"}
 
 SKIP_DEPENDENCY_LIST=${SKIP_DEPENDENCY_LIST:-"false"}
 
-if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]
-then
-    target_path=pull-request/$TRAVIS_PULL_REQUEST
+# CircleCI defined variable only for forked PRs
+CIRCLE_PR_NUMBER="${CIRCLE_PR_NUMBER:-${CIRCLE_PULL_REQUEST##*/}}"
 
-elif [[ -z "$DEPLOY_BRANCHES" || "$TRAVIS_BRANCH" =~ "$DEPLOY_BRANCHES" ]]
+if [[ ! -z "${CIRCLE_PR_NUMBER}" ]]
 then
-    target_path=deploy/${TRAVIS_BRANCH////.}/$TRAVIS_BUILD_NUMBER
+    target_path=pull-request/${CIRCLE_PR_NUMBER}
+
+elif [[ -z "${DEPLOY_BRANCHES}" || "$CIRCLE_BRANCH" =~ "$DEPLOY_BRANCHES" ]]
+then
+    target_path=deploy/${CIRCLE_BRANCH////.}/$CIRCLE_BUILD_NUMBER
 
 else
     echo "Not deploying."
@@ -45,16 +50,16 @@ else
 
 fi
 
-# BEGIN Travis fold/timer support
+# BEGIN Circle fold/timer support
 
 activity=""
 timer_id=""
 start_time=""
 
-travis_start() {
+circle_start() {
     if [[ -n "$activity" ]]
     then
-        echo "Nested travis_start is not supported!"
+        echo "Nested circle_start is not supported!"
         return
     fi
 
@@ -63,22 +68,22 @@ travis_start() {
     start_time=$(date +%s%N)
     start_time=${start_time/N/000000000} # in case %N isn't supported
 
-    echo "travis_fold:start:$activity"
-    echo "travis_time:start:$timer_id"
+    echo "circle_fold:start:$activity"
+    echo "circle_time:start:$timer_id"
 }
 
-travis_end() {
+circle_end() {
     if [[ -z "$activity" ]]
     then
-        echo "Can't travis_end without travis_start!"
+        echo "Can't circle_end without circle_start!"
         return
     fi
 
     end_time=$(date +%s%N)
     end_time=${end_time/N/000000000} # in case %N isn't supported
     duration=$(expr $end_time - $start_time)
-    echo "travis_time:end:$timer_id:start=$start_time,finish=$end_time,duration=$duration"
-    echo "travis_fold:end:$activity"
+    echo "circle_time:end:$timer_id:start=$start_time,finish=$end_time,duration=$duration"
+    echo "circle_fold:end:$activity"
 
     # reset
     activity=""
@@ -86,7 +91,7 @@ travis_end() {
     start_time=""
 }
 
-# END Travis fold/timer support
+# END Circle fold/timer support
 
 discovered_files=""
 for ext in ${DEPLOY_EXTENSIONS}
@@ -107,9 +112,9 @@ target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
 if [[ "$SKIP_DEPENDENCY_LIST" != "true" ]]
 then
     # Write dependency-list.txt and include it in the upload
-    travis_start "dependency_list"
+    circle_start "dependency_list"
     mvn -q -B dependency:list -Dsort=true -DoutputType=text -DoutputFile=target/dependency-list.txt || echo "dependency-tree.txt generation failed"
-    travis_end
+    circle_end
 
     if [[ -f "$DEPLOY_SOURCE_DIR/dependency-list.txt" ]]
     then
@@ -118,22 +123,22 @@ then
 fi
 
 if ! [ -x "$(command -v aws)" ]; then
-    travis_start "pip"
+    circle_start "pip"
     pip install --upgrade --user awscli
-    travis_end
+    circle_end
     export PATH=~/.local/bin:$PATH
 fi
 
-travis_start "aws_cp"
+circle_start "aws_cp"
 for file in $files
 do
     aws s3 cp $file s3://$DEPLOY_BUCKET/$target
 done
-travis_end
+circle_end
 
 if [[ $PURGE_OLDER_THAN_DAYS -ge 1 ]]
 then
-    travis_start "clean_s3"
+    circle_start "clean_s3"
     echo "Cleaning up builds in S3 older than $PURGE_OLDER_THAN_DAYS days . . ."
 
     cleanup_prefix=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}
@@ -162,6 +167,6 @@ then
             fi
         done
     done
-    travis_end
+    circle_end
 fi
 
