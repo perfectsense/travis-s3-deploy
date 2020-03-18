@@ -131,6 +131,41 @@ do
 done
 travis_end
 
+# Reports
+#
+# Test reports deploy to S3 for for cron job Travis builds.
+#
+# REPORT_DEPLOY_SOURCE_DIR = directory location of report files, defaults to $TRAVIS_BUILD_DIR/express/site/build/cucumberReports/cucumber.xml
+# REPORT_DEPLOY_EXTENSIONS = file extensions for reports, defaults to js, html, and css
+# REPORT_DEPLOY_FILES = whitespace-separated report files to deploy, defaults to files discovered in $REPORT_DEPLOY_SOURCE_DIR
+#
+
+if [[ "$TRAVIS_EVENT_TYPE" == "cron" ]]
+then
+
+    REPORT_DEPLOY_SOURCE_DIR=${REPORT_DEPLOY_SOURCE_DIR:-$TRAVIS_BUILD_DIR/express/site/build/cucumberReports/cucumber.xml}
+
+    REPORT_DEPLOY_EXTENSIONS=${REPORT_DEPLOY_EXTENSIONS:-"js html css"}
+    discovered_report_files=""
+    for report_ext in ${REPORT_DEPLOY_EXTENSIONS}
+    do
+        discovered_report_files+=" $(ls $REPORT_DEPLOY_SOURCE_DIR/*.${report_ext} 2>/dev/null || true)"
+    done
+
+    report_files=${REPORT_DEPLOY_FILES:-$discovered_report_files}
+
+    report_target_path=reports/${TRAVIS_BRANCH////.}/$(date +%Y%m%d)/$TRAVIS_BUILD_NUMBER
+
+    report_target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$report_target_path/
+
+    for report_file in $report_files
+    do
+        aws s3 cp $report_file s3://$DEPLOY_BUCKET/$report_target
+    done
+
+fi
+# end Report
+
 if [[ $PURGE_OLDER_THAN_DAYS -ge 1 ]]
 then
     travis_start "clean_s3"
