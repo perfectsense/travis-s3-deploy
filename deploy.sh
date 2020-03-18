@@ -6,7 +6,7 @@ set -e -u
 # DEPLOY_BUCKET = your bucket name
 # DEPLOY_BUCKET_PREFIX = a directory prefix within your bucket
 # DEPLOY_BRANCHES = regex of branches to deploy; leave blank for all
-# DEPLOY_EXTENSIONS = whitespace-separated file exentions to deploy; leave blank for "jar war zip"
+# DEPLOY_EXTENSIONS = whitespace-separated file extensions to deploy; leave blank for "jar war zip"
 # DEPLOY_FILES = whitespace-separated files to deploy; leave blank for $TRAVIS_BUILD_DIR/target/*.$extensions
 # AWS_ACCESS_KEY_ID = AWS access ID
 # AWS_SECRET_ACCESS_KEY = AWS secret
