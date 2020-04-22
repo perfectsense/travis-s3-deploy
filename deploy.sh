@@ -96,7 +96,7 @@ files=${DEPLOY_FILES:-$discovered_files}
 if [[ -z "${files// }" ]]
 then
     echo "Files not found; not deploying."
-    exit 1
+    exit
 fi
 
 target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
