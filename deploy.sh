@@ -108,6 +108,19 @@ if ! [ -x "$(command -v aws)" ]; then
     export PATH=~/.local/bin:$PATH
 fi
 
+travis_start "aws_rm"
+aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $target --output=text | \
+while read -r line
+do
+    filename=`echo "$line" | awk -F'\t' '{print $3}'`
+    if [[ $filename != "" ]]
+    then
+        echo "Deleting existing artifact s3://$DEPLOY_BUCKET/$filename."
+        aws s3 rm s3://$DEPLOY_BUCKET/$filename
+    fi
+done
+travis_end
+
 travis_start "aws_cp"
 for file in $files
 do
