@@ -103,7 +103,8 @@ target=builds/${DEPLOY_BUCKET_PREFIX}${DEPLOY_BUCKET_PREFIX:+/}$target_path/
 
 if ! [ -x "$(command -v aws)" ]; then
     travis_start "pip"
-    pip install --upgrade --user awscli
+    command -v pyenv && (pyenv global 3.7 || pyenv global 3.6 || true)
+    pip install --upgrade --user -q awscli
     travis_end
     export PATH=~/.local/bin:$PATH
 fi
