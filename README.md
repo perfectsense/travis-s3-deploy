@@ -36,7 +36,7 @@ Your .travis.yml should look something like this:
 language: java
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 install: true
 
@@ -46,6 +46,7 @@ branches:
     - master
     - /^release-.*$/
 
+# MAVEN PROJECTS ONLY:
 cache:
   directories:
     - $HOME/.m2
@@ -57,14 +58,21 @@ env:
     - DEPLOY_BUCKET=exampleco-builds
     - DEPLOY_BUCKET_PREFIX=exampleco # optional if using a shared deployment bucket
     - DEPLOY_BRANCHES=develop\|release # optional - all branches defined in "branches" above is the default
+    # MAVEN PROJECTS:
     - DEPLOY_SOURCE_DIR=$TRAVIS_BUILD_DIR/site/target # optional - if your war file is somewhere other than ./target
+    # GRADLE PROJECTS:
+    - DEPLOY_SOURCE_DIR=$TRAVIS_BUILD_DIR/site/build/libs # optional - if your war file is somewhere other than ./target
+    - GRADLE_PARAMS="optional additional paremters to pass along to gradle if using build-gradle.sh"
 
 before_script:
   - git clone https://github.com/perfectsense/travis-s3-deploy.git
-  - cp travis-s3-deploy/settings.xml ~/.m2/settings.xml
+  - cp travis-s3-deploy/settings.xml ~/.m2/settings.xml # optional
 
 script:
+  # MAVEN PROJECTS:
   - travis-s3-deploy/build.rb --skip-tests-if-pr && travis-s3-deploy/deploy.sh
+  # GRADLE PROJECTS:
+  - travis-s3-deploy/build-gradle.sh && travis-s3-deploy/deploy.sh
 ```
 
 Note that any of the above environment variables can be set in Travis, and do not need to be included in your .travis.yml. `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` should always be set to your S3 bucket credentials as environment variables in Travis, not this file.
