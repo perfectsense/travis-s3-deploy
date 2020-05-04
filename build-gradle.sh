@@ -15,6 +15,13 @@ fi
 #    fi
 #fi
 
+if [[ -z "$GRADLE_CACHE_USERNAME" || -z "$GRADLE_CACHE_PASSWORD" ]]; then
+    echo "============================================================"
+    echo "Set GRADLE_CACHE_USERNAME and GRADLE_CACHE_PASSWORD"
+    echo "environment variables to take advantage of the build cache!"
+    echo "============================================================"
+fi
+
 if [ -z "$TRAVIS_BUILD_NUMBER" ]; then
   if [[ "$DISABLE_BUILD_SCAN" == "true" ]]; then
       ./gradlew $GRADLE_PARAMS
@@ -40,7 +47,9 @@ else
 
     fi
 
+    echo "======================================"
     echo "Building version ${version}"
+    echo "======================================"
 
     if [[ "$DISABLE_BUILD_SCAN" == "true" ]]; then
         ./gradlew $GRADLE_PARAMS -Prelease="${version}"
