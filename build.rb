@@ -355,19 +355,19 @@ end
 # Generate a new version number for the given module_path using the given file paths
 def versioned_maven_module(module_path, file_paths)
   file_paths_str = file_paths.respond_to?('each') ? file_paths.join(' ') : file_paths
-  commit_count = `git rev-list --count HEAD -- #{file_paths_str}`.to_s.strip
-  commit_hash = `git rev-list HEAD -- #{file_paths_str} | head -1`.to_s.strip[0, 6]
-  artifact = maven_module_info(module_path)
-  version = SemVersion.new(artifact.version.to_s)
-
-  if (version.minor == nil)
-    version.minor = '0'
+  version = `git describe --tags --match "v[0-9]*" --abbrev=6 HEAD 2>/dev/null`.to_s.strip
+  if version.empty?
+    commit_count = `git rev-list --count HEAD -- #{file_paths_str}`.to_s.strip
+    commit_hash = `git rev-list HEAD -- #{file_paths_str} | head -1`.to_s.strip[0, 6]
+    version = "v0-#{commit_count}-g#{commit_hash}"
   end
 
-  artifact.version = version.major \
-      + '.' + version.minor \
-      + '.' + commit_count \
-      + '-x' + commit_hash
+  version.gsub!('v', '')
+
+  artifact = maven_module_info(module_path)
+
+  artifact.version = version
+
   artifact
 end
 
@@ -539,13 +539,12 @@ def build
 
   # Site artifact gets a special version number
   if ENV["TRAVIS_PULL_REQUEST"] && ENV["TRAVIS_PULL_REQUEST"] != "false"
-    # 1.0-PR123
+    # PR123
     site_artifact = maven_module_info(site_module_path)
-    site_artifact_version = SemVersion.new(site_artifact.version.to_s)
-    site_artifact.version = site_artifact_version.major.to_s + '.' + site_artifact_version.minor.to_s + "-PR" + ENV["TRAVIS_PULL_REQUEST"]
+    site_artifact.version = "PR" + ENV["TRAVIS_PULL_REQUEST"]
 
   elsif ENV["TRAVIS_BUILD_NUMBER"]
-    # 1.0.87-xabc123f+45 where 87 is the number of commits,
+    # 1.0-87-gabc123f+45 where 1.0 is the last git tag, 87 is the number of commits,
     # abc123f is the commit sha, and 45 is the Travis build number
     site_artifact.version = site_artifact.version + "+" + ENV["TRAVIS_BUILD_NUMBER"]
   end
