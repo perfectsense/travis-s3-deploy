@@ -3,7 +3,7 @@
 set -e
 
 # Set a default JAVA_TOOL_OPTIONS if it hasn't already been specified in .travis.yml
-#export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:--Xms512m -Xmx4096m}"
+export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:--Xmx4096m}"
 
 if [[ $(git rev-parse --is-shallow-repository) == "true" ]]
 then
