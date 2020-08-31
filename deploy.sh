@@ -155,7 +155,7 @@ then
                 if [[ $filename != "" ]]
                 then
                     echo "s3://$DEPLOY_BUCKET/$filename is older than $PURGE_OLDER_THAN_DAYS days ($last_modified). Deleting."
-                    aws s3 rm s3://$DEPLOY_BUCKET/$filename
+                    aws s3 rm "s3://$DEPLOY_BUCKET/$filename"
                 fi
             fi
         done
