@@ -62,5 +62,8 @@ else
 fi
 
 if [[ -n "${SONAR_TOKEN:-}" ]]; then
+  echo "======================================"
+  echo "Running SonarQube Analysis"
+  echo "======================================"
   ./gradlew sonarqube -i
 fi
