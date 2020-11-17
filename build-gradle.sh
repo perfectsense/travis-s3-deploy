@@ -60,3 +60,7 @@ else
         ./gradlew $GRADLE_PARAMS -Prelease="${version}" --scan
      fi
 fi
+
+if [[ -n "${SONAR_TOKEN:-}" ]]; then
+  ./gradlew sonarqube -i
+fi
