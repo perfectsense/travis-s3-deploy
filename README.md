@@ -81,35 +81,34 @@ Note that any of the above environment variables can be set in Travis, and do no
 
 Included in the repository is a `sonarqube.sh` execution script. This script will execute Gradle builds using SonarQube
 analysis either as a PR or as a general version build. Due to the added overhead Sonarqube adds to the build, its recommended to
-configure Travis to build using a matrix to allow the analysis to run in parallel with the general build and deployment.
+configure Travis to run the analysis after the general build and deployment.
 
 **Note:** Usage of this script requires an administrator setting the `SONAR_TOKEN` environment variable in your Travis
 configuration. This token can be obtained via your associated SonarCloud console. If the token is not present, the build
 will exit with status 1.
 
-Here is an example matrix `travis.yml` configuration using Sonarqube:
+Here is an example `travis.yml` configuration using Sonarqube:
 
 ```yaml
+language: java
+
 branches:
   only:
     - develop
     - /^v\d.*$/
 
-matrix:
-  include:
-    - name: Build and Deploy
-      jdk: openjdk8
-      install: true
-      env:
-        - DEPLOY_SOURCE_DIR=site/build/libs
-      before_script:
-        - git clone https://github.com/perfectsense/travis-s3-deploy.git
-      script:
-        - ./travis-s3-deploy/build-gradle.sh && ./travis-s3-deploy/deploy.sh
-    - name: SonarQube Analysis
-      jdk: openjdk8
-      install: true
-      before_script:
-        - git clone https://github.com/perfectsense/travis-s3-deploy.git
-      script: ./travis-s3-deploy/sonarqube.sh
+jdk:
+  - openjdk8
+
+install: true
+
+env:
+  global:
+    - DEPLOY_SOURCE_DIR=site/build/libs
+
+before_script:
+  - git clone https://github.com/perfectsense/travis-s3-deploy.git
+
+script:
+  - ./travis-s3-deploy/build-gradle.sh && ./travis-s3-deploy/deploy.sh && ./etc/sonarqube.sh
 ```
