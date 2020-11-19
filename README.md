@@ -99,7 +99,6 @@ matrix:
       env:
         - DEPLOY_SOURCE_DIR=site/build/libs
       before_script:
-        - npm install -g gulp-cli@2.0.1
         - git clone https://github.com/perfectsense/travis-s3-deploy.git
       script:
         - ./travis-s3-deploy/build-gradle.sh
