@@ -105,8 +105,7 @@ matrix:
       before_script:
         - git clone https://github.com/perfectsense/travis-s3-deploy.git
       script:
-        - ./travis-s3-deploy/build-gradle.sh
-        - ./travis-s3-deploy/deploy.sh
+        - ./travis-s3-deploy/build-gradle.sh && ./travis-s3-deploy/deploy.sh
     - name: SonarQube Analysis
       jdk: openjdk8
       install: true
