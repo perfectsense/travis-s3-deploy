@@ -83,6 +83,9 @@ Included in the repository is a `sonarqube.sh` execution script. This script wil
 analysis either as a PR or as a general version build. Due to the added overhead Sonarqube adds to the build, its recommended to
 configure Travis to build using a matrix to allow the analysis to run in parallel with the general build and deployment.
 
+**Note:** Usage of this script requires an administrator setting the `SONAR_TOKEN` environment variable in your Travis
+configuration. This token can be obtained via your associated SonarCloud console.
+
 Here is an example matrix `travis.yml` configuration using Sonarqube:
 
 ```yaml
