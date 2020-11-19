@@ -77,4 +77,37 @@ script:
 
 Note that any of the above environment variables can be set in Travis, and do not need to be included in your .travis.yml. `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` should always be set to your S3 bucket credentials as environment variables in Travis, not this file.
 
+## SonarQube
 
+Included in the repository is a `sonarqube.sh` execution script. This script will execute Gradle builds using SonarQube
+analysis either as a PR or as a general version build. Due to the added overhead Sonarqube adds to the build, its recommended to
+configure Travis to build using a matrix to allow the analysis to run in parallel with the general build and deployment.
+
+Here is an example matrix `travis.yml` configuration using Sonarqube:
+
+```yaml
+branches:
+  only:
+    - develop
+    - /^v\d.*$/
+
+matrix:
+  include:
+    - name: Build and Deploy
+      jdk: openjdk8
+      install: true
+      env:
+        - DEPLOY_SOURCE_DIR=site/build/libs
+      before_script:
+        - npm install -g gulp-cli@2.0.1
+        - git clone https://github.com/perfectsense/travis-s3-deploy.git
+      script:
+        - ./travis-s3-deploy/build-gradle.sh
+        - ./travis-s3-deploy/deploy.sh
+    - name: SonarQube Analysis
+      jdk: openjdk8
+      install: true
+      before_script:
+        - git clone https://github.com/perfectsense/travis-s3-deploy.git
+      script: ./travis-s3-deploy/sonarqube.sh
+```
