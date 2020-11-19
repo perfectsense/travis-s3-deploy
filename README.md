@@ -84,7 +84,8 @@ analysis either as a PR or as a general version build. Due to the added overhead
 configure Travis to build using a matrix to allow the analysis to run in parallel with the general build and deployment.
 
 **Note:** Usage of this script requires an administrator setting the `SONAR_TOKEN` environment variable in your Travis
-configuration. This token can be obtained via your associated SonarCloud console.
+configuration. This token can be obtained via your associated SonarCloud console. If the token is not present, the build
+will exit with status 1.
 
 Here is an example matrix `travis.yml` configuration using Sonarqube:
 
@@ -104,7 +105,8 @@ matrix:
       before_script:
         - git clone https://github.com/perfectsense/travis-s3-deploy.git
       script:
-        - ./travis-s3-deploy/build-gradle.sh && ./travis-s3-deploy/deploy.sh
+        - ./travis-s3-deploy/build-gradle.sh
+        - ./travis-s3-deploy/deploy.sh
     - name: SonarQube Analysis
       jdk: openjdk8
       install: true
