@@ -160,6 +160,9 @@ then
                 then
                     echo "s3://$DEPLOY_BUCKET/$filename is older than $PURGE_OLDER_THAN_DAYS days ($last_modified). Deleting."
                     aws s3 rm "s3://$DEPLOY_BUCKET/$filename"
+                elif [[ $filename != "" ]]
+                then
+                    echo "Skipping delete on s3://$DEPLOY_BUCKET/$filename to ensure at least one file in $DEPLOY_BUCKET."
                 fi
             fi
         done
