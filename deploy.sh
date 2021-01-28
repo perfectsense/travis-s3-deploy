@@ -140,9 +140,6 @@ then
 
     for suffix in deploy pull-request
     do
-        # track number of items in the bucket to ensure we don't delete everything, which would break the _deploy servlet
-        item_count=0
-        number_of_items=`aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=json --query="length(Contents[])"`
         aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=text | \
         while read -r line
         do
@@ -151,18 +148,14 @@ then
             then
                 continue
             fi
-            ((item_count++))
             last_modified_ts=`date -d"$last_modified" +%s`
             filename=`echo "$line" | awk -F'\t' '{print $3}'`
             if [[ $last_modified_ts -lt $older_than_ts ]]
             then
-                if [[ $filename != "" && "$item_count" -ne "$number_of_items" ]]
+                if [[ $filename != "" ]]
                 then
                     echo "s3://$DEPLOY_BUCKET/$filename is older than $PURGE_OLDER_THAN_DAYS days ($last_modified). Deleting."
                     aws s3 rm "s3://$DEPLOY_BUCKET/$filename"
-                elif [[ $filename != "" ]]
-                then
-                    echo "Skipping delete on s3://$DEPLOY_BUCKET/$filename to ensure at least one file in $DEPLOY_BUCKET."
                 fi
             fi
         done
