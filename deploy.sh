@@ -143,7 +143,7 @@ then
         # track number of items in the bucket to ensure we don't delete everything, which would break the _deploy servlet
         item_count=0
         echo "Getting number of items in $DEPLOY_BUCKET with prefix $cleanup_prefix$suffix/..."
-        number_of_items=`aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=json --query="length(Contents[])"` || 0
+        number_of_items=`aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=json --query="length(Contents[])"` || number_of_items=0
         echo "$number_of_items"
         aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=text | \
         while read -r line
