@@ -156,6 +156,7 @@ then
             ((item_count++))
             last_modified_ts=`date -d"$last_modified" +%s`
             filename=`echo "$line" | awk -F'\t' '{print $3}'`
+            echo "File # $item_count: $filename"
             if [[ $last_modified_ts -lt $older_than_ts ]]
             then
                 if [[ $filename != "" && "$item_count" -ne "$number_of_items" ]]
