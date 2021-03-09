@@ -148,6 +148,7 @@ then
         aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=text | \
         while read -r line
         do
+            echo "Line: $line"
             last_modified=`echo "$line" | awk -F'\t' '{print $4}'`
             if [[ -z $last_modified ]]
             then
