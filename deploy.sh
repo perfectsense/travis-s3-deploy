@@ -150,12 +150,17 @@ then
         do
             echo "Line: $line"
             last_modified=`echo "$line" | awk -F'\t' '{print $4}'`
+            echo "Last modified: $last_modified"
             if [[ -z $last_modified ]]
             then
+                echo "Skipping"
                 continue
             fi
+            echo "Item_count: $item_count"
             ((item_count++))
+            echo "Item_count: $item_count"
             last_modified_ts=`date -d"$last_modified" +%s`
+            echo "Last modified ts: $last_modified_ts"
             filename=`echo "$line" | awk -F'\t' '{print $3}'`
             echo "File # $item_count: $filename"
             if [[ $last_modified_ts -lt $older_than_ts ]]
