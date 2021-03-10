@@ -156,13 +156,10 @@ then
                 echo "Skipping"
                 continue
             fi
-            echo "Item_count: $item_count"
             item_count=$((item_count+1))
-            echo "Item_count: $item_count"
             last_modified_ts=`date -d"$last_modified" +%s`
-            echo "Last modified ts: $last_modified_ts"
             filename=`echo "$line" | awk -F'\t' '{print $3}'`
-            echo "File # $item_count: $filename"
+            echo "File # $item_count: $filename. Last modified: $last_modified_ts"
             if [[ $last_modified_ts -lt $older_than_ts ]]
             then
                 if [[ $filename != "" && "$item_count" -ne "$number_of_items" ]]
