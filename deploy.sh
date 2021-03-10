@@ -157,7 +157,7 @@ then
                 continue
             fi
             echo "Item_count: $item_count"
-            ((item_count++))
+            item_count=$((item_count+1))
             echo "Item_count: $item_count"
             last_modified_ts=`date -d"$last_modified" +%s`
             echo "Last modified ts: $last_modified_ts"
