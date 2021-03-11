@@ -148,12 +148,9 @@ then
         aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $cleanup_prefix$suffix/ --output=text | \
         while read -r line
         do
-            echo "Line: $line"
             last_modified=`echo "$line" | awk -F'\t' '{print $4}'`
-            echo "Last modified: $last_modified"
             if [[ -z $last_modified ]]
             then
-                echo "Skipping"
                 continue
             fi
             item_count=$((item_count+1))
