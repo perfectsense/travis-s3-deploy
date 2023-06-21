@@ -114,7 +114,7 @@ aws s3api list-objects --bucket $DEPLOY_BUCKET --prefix $target --output=text | 
 while read -r line
 do
     filename=`echo "$line" | awk -F'\t' '{print $3}'`
-    if [[ $filename != "" ]]
+    if [[ $filename != "" && $filename != "None" ]]
     then
         echo "Deleting existing artifact s3://$DEPLOY_BUCKET/$filename."
         aws s3 rm s3://$DEPLOY_BUCKET/$filename
